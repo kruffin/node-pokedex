@@ -41,6 +41,12 @@ module.exports = exports = (function () {
 				return self._db.pokeMoves.find({ name: name });
 			});
 		},
+		getMoveById: function (id) {
+			var self = this;
+			return q().then( function () {
+				return self._db.pokeMoves.find({ id: id });
+			});
+		},
 		getPokemonByName: function (name) {
 			var self = this;
 			return q().then( function () {

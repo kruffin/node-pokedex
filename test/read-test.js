@@ -11,4 +11,9 @@ pdex(null, './test/csv').then(function (pokedex) {
 		.then(function (m) {
 			console.log(m);
 		}).done();
+
+	pokedex.getVersionGroupById(4)
+		.then(function (vg) {
+			console.log(vg);
+		}).done();
 }).done();
