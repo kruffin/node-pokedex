@@ -1,0 +1,24 @@
+{
+  "name": "node-pokedex",
+  "version": "1.0.0",
+  "description": "A node-based pokedex.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kruffin/node-pokedex.git"
+  },
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "pokemon",
+    "pokedex"
+  ],
+  "author": "Kevin Ruffin",
+  "license": "ISC",
+  "dependencies": {
+    "csv": "^0.4.6",
+    "lowdb": "^0.10.2",
+    "q": "^1.4.1"
+  }
+}

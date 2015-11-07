@@ -1,0 +1,1 @@
+These CSV files were obtained from https://github.com/veekun/pokedex.git
