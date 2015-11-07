@@ -4,11 +4,12 @@ var low = require('lowdb'),
 
 module.exports = exports = (function () {
 
-	function Pokedex () {
-		this._pokedex = low(); // in memory for now
+	function Pokedex (lowdbLoc) {
+		this._pokedex = low(lowdbLoc);
 		this._db = {
 			pokemon: this._pokedex('pokemon'),
-			pokeMoves: this._pokedex('poke-moves')
+			pokeMoves: this._pokedex('poke-moves'),
+			versionGroups: this._pokedex('version-groups')
 		}
 	}
 
@@ -34,6 +35,12 @@ module.exports = exports = (function () {
 			var self = this;
 			return q().then( function () { self._db.pokeMoves.push(move); });
 		},
+		getMoveByName: function (name) {
+			var self = this;
+			return q().then( function () {
+				return self._db.pokeMoves.find({ name: name });
+			});
+		},
 		getPokemonByName: function (name) {
 			var self = this;
 			return q().then( function () {
@@ -46,10 +53,16 @@ module.exports = exports = (function () {
 				return self._db.pokemon.find({ id: id });
 			});
 		},
-		getPokeMoveByName: function (name) {
+
+		// Versions
+		addVersionGroup: function (vgroup) {
+			var self = this;
+			return q().then( function () { self._db.versionGroups.push(vgroup); });
+		},
+		getVersionGroupById: function (id) {
 			var self = this;
 			return q().then( function () {
-				return self._db.pokeMoves.find({ name: name });
+				return self._db.versionGroups.find({ id: id });
 			});
 		}
 	};

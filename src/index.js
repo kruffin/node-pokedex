@@ -42,7 +42,7 @@ module.exports = exports = (function () {
 		var pd = q.defer();
 
 		fs.createReadStream(filename)
-			.pipe(csv.parse({columns: true}))
+			.pipe(csv.parse({columns: true, auto_parse: true}))
 			.pipe(csv.transform( recordFunc ))
 			.on('end', function () {
 				finishFunc(pd);
@@ -98,14 +98,35 @@ module.exports = exports = (function () {
 			pchain.push(function () {
 				promise.resolve(obj.pdex);
 			});
-			// Create the sequential chain
+			// Create the sequential chain and evaluate
 			pchain.reduce(q.when, q()).done();
 		});
 
 		return obj.pdex;
 
 	};
-	function _readMoves (csvBaseLoc, pdex) { return {pdex: pdex, moves: null}; };
+	function _readMoves (csvBaseLoc, pdex) {
+		var moves = {},
+			pchain = [];
+		return _csvHelper(path.join(csvBaseLoc, 'moves.csv'), function (record) {
+			record.name = record.identifier;
+			delete record.identifier;
+			
+			moves[record.id] = record;
+			pchain.push(function () {
+				return pdex.addMove(record);
+			});
+			return record;
+		}, function (promise) {
+			// Add in the final resolve call
+			pchain.push(function () {
+				promise.resolve({pdex: pdex, moves: moves});
+			});
+			// Create the sequential chain and evaluate
+			pchain.reduce(q.when, q()).done();
+		});
+
+	};
 	function _readPokemonMoves (csvBaseLoc, obj) { return obj.pdex; };
 		
 })();

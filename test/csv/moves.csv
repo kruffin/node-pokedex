@@ -1,0 +1,6 @@
+id,identifier,generation_id,type_id,power,pp,accuracy,priority,target_id,damage_class_id,effect_id,effect_chance,contest_type_id,contest_effect_id,super_contest_effect_id
+14,swords-dance,1,1,,20,,0,7,1,51,,2,32,11
+15,cut,1,1,50,30,95,0,10,2,1,,1,14,5
+22,vine-whip,1,12,45,25,100,0,10,2,1,,1,1,5
+33,tackle,1,1,50,35,100,0,10,2,1,,5,1,5
+34,body-slam,1,1,85,15,100,0,10,2,7,30,5,4,5
