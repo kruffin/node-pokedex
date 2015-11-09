@@ -1,7 +1,7 @@
 
 var pdex = require('../src/index.js');
 
-pdex(null, './test/csv').then(function (pokedex) {
+pdex().then(function (pokedex) {
 	pokedex.getPokemonByName('venusaur')
 		.then(function (p) {
 			console.log(p);
@@ -13,6 +13,11 @@ pdex(null, './test/csv').then(function (pokedex) {
 		}).done();
 
 	pokedex.getVersionGroupById(4)
+		.then(function (vg) {
+			console.log(vg);
+		}).done();
+
+	pokedex.getLatestVersionGroup()
 		.then(function (vg) {
 			console.log(vg);
 		}).done();

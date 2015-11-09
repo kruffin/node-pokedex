@@ -5,7 +5,7 @@ var low = require('lowdb'),
 module.exports = exports = (function () {
 
 	function Pokedex (lowdbLoc) {
-		this._pokedex = low(lowdbLoc);
+		this._pokedex = low(lowdbLoc, {autosave: false});
 		this._db = {
 			pokemon: this._pokedex('pokemon'),
 			pokeMoves: this._pokedex('poke-moves'),
@@ -69,6 +69,22 @@ module.exports = exports = (function () {
 			var self = this;
 			return q().then( function () {
 				return self._db.versionGroups.find({ id: id });
+			});
+		},
+		getLatestVersionGroup: function () {
+			var self = this;
+			return q().then( function () {
+				return self._db.versionGroups
+					.chain()
+					.sortByOrder('order', 'desc')
+					.take(1)
+					.value()[0];
+			});
+		},
+		save: function () {
+			var self = this;
+			return q().then( function () {
+				return self._pokedex.save();
 			});
 		}
 	};

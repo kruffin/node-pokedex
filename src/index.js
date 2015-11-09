@@ -6,7 +6,19 @@ var csv = require('csv'),
     path = require('path');
 
 module.exports = exports = (function () {
+	var DEFAULT_DB="./data/pokedex.json";
 
+	function _fileExists (filename) {
+		try {
+			if (fs.statSync(filename)) {
+				return true;
+			}
+		} catch (err) {
+			// No dice.
+		}
+
+		return false;
+	}
     /**
     * @param lowdbLoc Takes in a lowdb path and file name if the data should be backed on disk.
     *                 If the file already exists, csv parsing will not take place and the file
@@ -15,7 +27,22 @@ module.exports = exports = (function () {
     * @param csvBaseLoc The base path location to the csv files used to generate a lowdb database.
     */
     function _getPdex (lowdbLoc, csvBaseLoc) {
-        var pdex = new Pokedex(lowdbLoc);
+    	var pdex;
+    	if (lowdbLoc && _fileExists(lowdbLoc)) {
+    		// If the low db file exists, use it and don't generate a new one.
+    		pdex = new Pokedex(lowdbLoc);
+    		return q().then(function () {
+    			return pdex;
+    		});
+    	} else if (!lowdbLoc && _fileExists(DEFAULT_DB)) {
+    		pdex = new Pokedex(DEFAULT_DB);
+    		return q().then(function () {
+    			return pdex;
+    		});
+    	}
+
+    	// Generate a new low db from the csvs
+        pdex = new Pokedex(lowdbLoc);
 
         return q(pdex)
             // Read version groups
@@ -30,6 +57,8 @@ module.exports = exports = (function () {
             .then(_readMoves.bind(this, csvBaseLoc))
             // Read pokemon moves
             .then(_readPokemonMoves.bind(this, csvBaseLoc))
+            // Save the db
+            .then(pdex.save.bind(pdex))
             // Return the pokedex
             .then(function () {
                 return pdex;
@@ -63,24 +92,27 @@ module.exports = exports = (function () {
             
             pdex.addVersionGroup(record);
             return record;
-        }, function (promise) {
-            promise.resolve(pdex);
-        });
+        }, (function (promise) {
+	        	pdex.getLatestVersionGroup().then(function (vg) {
+	        		promise.resolve({versionGroup: vg, pdex: pdex});
+	        	})
+        	})
+        );
     };
 
-    function _readPokemon (csvBaseLoc, pdex) {
+    function _readPokemon (csvBaseLoc, obj) {
         return _csvHelper(path.join(csvBaseLoc, 'pokemon.csv'), function (record) {
             record.name = record.identifier;
             delete record.identifier;
             
-            pdex.addPokemon(record).done();
+            obj.pdex.addPokemon(record).done();
             return record;
         }, function (promise) {
-            promise.resolve(pdex);
+            promise.resolve(obj);
         });
     };
 
-    function _readStats (csvBaseLoc, pdex) { 
+    function _readStats (csvBaseLoc, obj) { 
         var stats = {};
         return _csvHelper(path.join(csvBaseLoc, 'stats.csv'), function (record) {
             record.name = record.identifier;
@@ -89,7 +121,8 @@ module.exports = exports = (function () {
             stats[record.id] = record;
             return record;
         }, function (promise) {
-            promise.resolve({pdex: pdex, stats: stats});
+        	obj.stats = stats;
+            promise.resolve(obj);
         });
     };
 
@@ -110,57 +143,59 @@ module.exports = exports = (function () {
         }, function (promise) {
             // Add in the final resolve call
             pchain.push(function () {
-                promise.resolve(obj.pdex);
+                promise.resolve(obj);
             });
             // Create the sequential chain and evaluate
             pchain.reduce(q.when, q()).done();
         });
-
-        return obj.pdex;
-
     };
-    function _readMoves (csvBaseLoc, pdex) {
+    function _readMoves (csvBaseLoc, obj) {
         var pchain = [];
         return _csvHelper(path.join(csvBaseLoc, 'moves.csv'), function (record) {
             record.name = record.identifier;
             delete record.identifier;
 
             pchain.push(function () {
-                return pdex.addMove(record);
+                return obj.pdex.addMove(record);
             });
             return record;
         }, function (promise) {
             // Add in the final resolve call
             pchain.push(function () {
-                promise.resolve(pdex);
+                promise.resolve(obj);
             });
             // Create the sequential chain and evaluate
             pchain.reduce(q.when, q()).done();
         });
 
     };
-    function _readPokemonMoves (csvBaseLoc, pdex) { 
+    function _readPokemonMoves (csvBaseLoc, obj) { 
         var pchain = [];
         return _csvHelper(path.join(csvBaseLoc, 'pokemon_moves.csv'), function (record) {
             record.name = record.identifier;
             delete record.identifier;
+            if (record.version_group_id !== obj.versionGroup.id) {
+            	// Only take the latest version's moves
+            	// HINT: This would be why other version moves are not in the final DB.
+            	return record;
+            }
 
             pchain.push(function () {
-                return pdex.getMoveById(record.move_id)
+                return obj.pdex.getMoveById(record.move_id)
                     .then(function (move) {
-                        return pdex.getPokemonById(record.pokemon_id)
+                        return obj.pdex.getPokemonById(record.pokemon_id)
                             .then(function(pkmn) {
                                 return {move: move, pkmn: pkmn};
                             });
-                    }).then(function (obj) {
-                        obj.pkmn.moves = obj.pkmn.moves || {};
-                        obj.pkmn.moves[record.version_group_id] = obj.pkmn.moves[record.version_group_id] || [];
+                    }).then(function (pkmnObj) {
+                        pkmnObj.pkmn.moves = pkmnObj.pkmn.moves || {};
+                        pkmnObj.pkmn.moves[record.version_group_id] = pkmnObj.pkmn.moves[record.version_group_id] || [];
                         // Ignore duplicate moves for now
                         // HINT: Levels the moves are obtained will be wrong
-                        var matches = obj.pkmn.moves[record.version_group_id].filter(function (m) { return m.id === obj.move.id; });
+                        var matches = pkmnObj.pkmn.moves[record.version_group_id].filter(function (m) { return m.id === pkmnObj.move.id; });
                         if (matches.length === 0) {
-                            obj.pkmn.moves[record.version_group_id].push(obj.move);
-                            return pdex.addPokemon({id: obj.pkmn.id, moves: obj.pkmn.moves});
+                            pkmnObj.pkmn.moves[record.version_group_id].push(pkmnObj.move);
+                            return obj.pdex.addPokemon({id: pkmnObj.pkmn.id, moves: pkmnObj.pkmn.moves});
                         }
                         
                         // Return nothing
@@ -171,13 +206,11 @@ module.exports = exports = (function () {
         }, function (promise) {
             // Add in the final resolve call
             pchain.push(function () {
-                promise.resolve(pdex);
+                promise.resolve(obj);
             });
             // Create the sequential chain and evaluate
             pchain.reduce(q.when, q()).done();
         });
-
-        return obj.pdex; 
     };
         
 })();
