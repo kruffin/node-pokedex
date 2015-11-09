@@ -6,7 +6,7 @@ var csv = require('csv'),
     path = require('path');
 
 module.exports = exports = (function () {
-	var DEFAULT_DB="./data/pokedex.json";
+	var DEFAULT_DB=path.join(require.resolve('node-pokedex'), "../../data/pokedex.json");
 
 	function _fileExists (filename) {
 		try {
