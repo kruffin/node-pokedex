@@ -1,13 +1,27 @@
 
 Usage:
+    
+    var loadCSV = function() {
+      //Get the pokedex data from our CSV files
+      pdex(null, './data/csv');
+    },
 
-    pdex(null, './data/csv').then(function (pokedex) {
-        // You now have a pokedex object and can pull data out
-        pokedex.getPokemonByName('venusaur')
-            .then(function (p) {
-                console.log(p);
-            }).done();
-    }).done();
+    getPokemon = function(pokedex) {
+      // You now have a pokedex object and can pull data out
+      pokedex.getPokemonByName('venusaur');
+    },
+
+    doCoolStuff = function(pokemon) {
+      //Now you can do cool things with your pokemon object in JSON form
+      console.log(pokemon);
+    };
+
+    loadCSV()
+    .then( getPokemon )
+    .then( doCoolStuff )
+    .done()
+
+Output:
 
     { id: '3',
         species_id: '3',
